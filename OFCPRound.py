@@ -81,7 +81,8 @@ class Round:
     return res
 
 if __name__ == "__main__":
-  r = Round(["Ashwin", "Ashwin2", "Ashwin3", "Ashwin4"])
+  players = ["Ashwin", "Ashwin2", "Ashwin3", "Ashwin4"]
+  r = Round(players)
   print(r.score)
            
 
