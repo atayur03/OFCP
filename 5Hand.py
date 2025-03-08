@@ -1,25 +1,92 @@
-def getHandRankFromFiveCards(fC, fS): # given 5 cards, determine what the rank of the hand is and add kicker info to it
-    if fS.count(fS[0])==len(fS): fC.append(8) if ((fC[0]==fC[1]-1==fC[2]-2==fC[3]-3) and (fC[4]-1==fC[3] or fC[4]-12==fC[0])) else fC.append(5)
-    elif ((fC[0] == fC[1]-1 == fC[2]-2 == fC[3]-3) and (fC[4]-1 == fC[3] or fC[4]-12 == fC[0])): fC.append(4) # straight
-    elif fC[1]==fC[2]==fC[3] and (fC[0]==fC[1] or fC[3]==fC[4]): fC.extend([7, fC[0], fC[4]]) if fC[0]==fC[1] else fC.extend([7, fC[4], fC[0]]) # quads
-    elif fC[0]==fC[1]==fC[2] and fC[3]==fC[4]: fC.extend([6, fC[0], fC[4]]) # boat, high set full of low pair
-    elif fC[0] == fC[1] and fC[2] == fC[3] == fC[4]: fC.extend([6, fC[4], fC[0]]) # boat, low set full of high pair
-    elif fC[0]==fC[1]==fC[2]: fC.extend([3, fC[0], fC[4], fC[3]]) # trips, both kickers higher; other kicker-types of trips in next line
-    elif fC[2]==fC[3] and (fC[1]==fC[2] or fC[3]==fC[4]): fC.extend([3, fC[1], fC[4], fC[0]]) if fC[1]==fC[2] else fC.extend([3, fC[2], fC[1], fC[0]])
-    elif (fC[0]==fC[1] and (fC[2]==fC[3] or fC[3]==fC[4])) or (fC[1]==fC[2] and fC[3]==fC[4]): # two pair
-        if fC[0]==fC[1] and fC[2]==fC[3]: fC.extend([2, fC[3], fC[1], fC[4]]) # kicker higher than both pairs
-        else: fC.extend([2, fC[4], fC[1], fC[2]]) if fC[0]==fC[1] and fC[3]==fC[4] else fC.extend([2,fC[4],fC[1],fC[0]])
-    elif fC[0]==fC[1] or fC[1]==fC[2]: fC.extend([1, fC[0], fC[4], fC[3], fC[2]]) if fC[0]==fC[1] else fC.extend([1, fC[1], fC[4], fC[3], fC[0]])
-    elif fC[2]==fC[3] or fC[3]==fC[4]: fC.extend([1, fC[2], fC[4], fC[1], fC[0]]) if fC[2]==fC[3] else fC.extend([1, fC[3], fC[2], fC[1], fC[0]])
-    return fC if len(fC) > 5 else fC + [0] # return hand, but first if we haven't appended anything else note that it's just a high card hand
+from collections import Counter
 
-def firstHandIsBetter(h1, h2): # given two hands, with the 5 cards + rank + relevant kicker details, say which wins
-    if h1[5] != h2[5]: return h1[5] > h2[5] # different ranks
-    if h1[5]==8 or h1[5]==4: return h1[2] > h2[2] if h1[2] != h2[2] else None # SF or straight: check middle card
-    if h1[5]==5 or h1[5]==0: # flush or high card: check all five cards
-        for wooper in range(5):
-            if h1[4 - wooper] != h2[4 - wooper]: return h1[4 - wooper] > h2[4 - wooper]
-        return None # chop
-    for scromp in range(6,10):
-        if h1[scromp] != h2[scromp]: return h1[scromp] > h2[scromp] # one is higher, so that one wins
-        if len(h1) == scromp+1: return None # all were the same, so it's a chop
+RANKS = "23456789TJQKA"
+SUITS = "cdhs"
+
+OFC_ROYALTIES = {
+    "Straight": 2,
+    "Flush": 4,
+    "Full House": 6,
+    "Four of a Kind": 10,
+    "Straight Flush": 15,
+    "Royal Flush": 25
+}
+
+class PokerHand:
+    def __init__(self, hand_str: str):
+        self.hand_str = hand_str
+        self.cards = self.parse_hand()
+
+    def calculate_royalties(self):
+        """Calculates royalties based on Open Face Chinese scoring."""
+        rank_value, _ = self.get_hand_rank()
+        
+        if rank_value == 8:
+            return OFC_ROYALTIES["Straight Flush"] if max(_) < 14 else OFC_ROYALTIES["Royal Flush"]
+        elif rank_value == 7:
+            return OFC_ROYALTIES["Four of a Kind"]
+        elif rank_value == 6:
+            return OFC_ROYALTIES["Full House"]
+        elif rank_value == 5:
+            return OFC_ROYALTIES["Flush"]
+        elif rank_value == 4:
+            return OFC_ROYALTIES["Straight"]
+        else:
+            return 0
+
+    def parse_hand(self):
+        """Parses the hand string into a list of (rank, suit) tuples."""
+        return [(self.hand_str[i], self.hand_str[i+1]) for i in range(0, len(self.hand_str), 2)]
+
+    def get_hand_rank(self):
+        """Determines the rank of the hand based on poker hand rankings."""
+        ranks = sorted([RANKS.index(rank)+2 for rank, suit in self.cards], reverse=True)
+        suits = [suit for rank, suit in self.cards]
+        rank_counts = Counter(ranks)
+        count_values = sorted(rank_counts.values(), reverse=True)
+        
+        is_flush = len(set(suits)) == 1
+        is_straight = len(rank_counts) == 5 and (max(ranks) - min(ranks) == 4)
+        
+        if is_straight and is_flush:
+            return (8, max(ranks))  # Straight flush
+        elif count_values == [4, 1] or count_values == [5]:
+            return (7, ranks)  # Four of a kind
+        elif count_values == [3, 2]:
+            return (6, ranks)  # Full house
+        elif is_flush:
+            return (5, ranks)  # Flush
+        elif is_straight:
+            return (4, max(ranks))  # Straight
+        elif count_values == [3, 1, 1]:
+            return (3, ranks)  # Three of a kind
+        elif count_values == [2, 2, 1]:
+            return (2, ranks)  # Two pair
+        elif count_values == [2, 1, 1, 1]:
+            return (1, ranks)  # One pair
+        else:
+            return (0, ranks)  # High card
+
+    @staticmethod
+    def firstBetter5(hand1: str, hand2: str):
+        """Compares two poker hands and returns the winner."""
+        h1 = PokerHand(hand1)
+        h2 = PokerHand(hand2)
+        
+        rank1 = h1.get_hand_rank()
+        rank2 = h2.get_hand_rank()
+        
+        if rank1 > rank2:
+            return True
+        elif rank1 < rank2:
+            return False
+        else:
+            return None
+
+# Example usage
+if __name__ == "__main__":
+    hand1 = "AsKsQsJsAs"
+    hand2 = "2s2c2s2d2d"
+    
+    print(PokerHand.firstBetter5(hand1, hand2))
+    print(PokerHand(hand2).calculate_royalties())

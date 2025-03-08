@@ -46,7 +46,7 @@ def inputTo3(cards:str):
   s = sorted(zip([c[0], c[2], c[4]], [c[1], c[3], c[5]]), reverse=True)
   return [x for x, _ in s]
 
-def firstBetter(h1:tuple, h2:tuple):
+def firstBetter3(h1:tuple, h2:tuple):
   '''
   Input:
     h1: tuple
