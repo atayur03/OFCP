@@ -14,10 +14,42 @@ OFC_ROYALTIES = {
 
 class PokerHand:
     def __init__(self, hand_str: str):
+        if not self.is_valid_hand5(hand_str):
+            raise ValueError("Invalid hand input. Must be 5 unique cards.")
         self.hand_str = hand_str
         self.cards = self.parse_hand()
 
-    def calculate_royalties(self):
+    @staticmethod
+    def is_valid_hand5(hand_str: str):
+        """Verifies if the input string represents a valid 5-card poker hand."""
+        if len(hand_str) != 10:
+            return False
+        
+        parsed_cards = [hand_str[i:i+2] for i in range(0, len(hand_str), 2)]
+        if len(parsed_cards) != 5:
+            return False
+        
+        for card in parsed_cards:
+            if card[0] not in RANKS or card[1] not in SUITS:
+                return False
+        return True
+
+    @staticmethod
+    def is_valid_hand3(hand_str: str):
+        """Verifies if the input string represents a valid 5-card poker hand."""
+        if len(hand_str) != 6:
+            return False
+        
+        parsed_cards = [hand_str[i:i+2] for i in range(0, len(hand_str), 2)]
+        if len(parsed_cards) != 3:
+            return False
+        
+        for card in parsed_cards:
+            if card[0] not in RANKS or card[1] not in SUITS:
+                return False
+        return True
+
+    def calculate_royalties_bottom(self):
         """Calculates royalties based on Open Face Chinese scoring."""
         rank_value, _ = self.get_hand_rank()
         
@@ -33,6 +65,13 @@ class PokerHand:
             return OFC_ROYALTIES["Straight"]
         else:
             return 0
+    
+    def calculate_royalties_middle(self):
+        rank_value, _ = self.get_hand_rank()
+        if rank_value == 3:
+            return 2
+        else:
+            return 2 * self.calculate_royalties_bottom()
 
     def parse_hand(self):
         """Parses the hand string into a list of (rank, suit) tuples."""
@@ -70,6 +109,12 @@ class PokerHand:
     @staticmethod
     def firstBetter5(hand1: str, hand2: str):
         """Compares two poker hands and returns the winner."""
+        if hand1 == 'foul' and hand2 == 'foul':
+            return 0
+        if hand1 == 'foul':
+            return -1
+        if hand2 == 'foul':
+            return 1
         h1 = PokerHand(hand1)
         h2 = PokerHand(hand2)
         
@@ -77,16 +122,9 @@ class PokerHand:
         rank2 = h2.get_hand_rank()
         
         if rank1 > rank2:
-            return True
+            return 1
         elif rank1 < rank2:
-            return False
+            return -1
         else:
-            return None
+            return 0
 
-# Example usage
-if __name__ == "__main__":
-    hand1 = "AsKsQsJsAs"
-    hand2 = "2s2c2s2d2d"
-    
-    print(PokerHand.firstBetter5(hand1, hand2))
-    print(PokerHand(hand2).calculate_royalties())

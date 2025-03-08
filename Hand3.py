@@ -46,17 +46,27 @@ def inputTo3(cards:str):
   s = sorted(zip([c[0], c[2], c[4]], [c[1], c[3], c[5]]), reverse=True)
   return [x for x, _ in s]
 
-def firstBetter3(h1:tuple, h2:tuple):
+def firstBetter3(h1, h2):
   '''
   Input:
-    h1: tuple
-    h2: tuple
+    h1: tuple or 'foul'
+    h2: tuple or 'foul'
   Returns:
     1 if h1 better
     0 if chop
     -1 if h2 better
   '''
+  if h1 == 'foul' and h2 == 'foul':
+    return 0
+  if h1 == 'foul':
+    return -1
+  if h2 == 'foul':
+    return 1
 
+  if type(h1) != tuple:
+    h1 = rank(inputTo3(h1))
+  if type(h2) != tuple:
+    h2 = rank(inputTo3(h2))
   #check hand strength
   if ranks[h1[0]] > ranks[h2[0]]:
     return 1
@@ -65,15 +75,15 @@ def firstBetter3(h1:tuple, h2:tuple):
   
   #if same strength, find better hand
   if h1[0] == 'set':
-    val = int(str(ord(h1[1]))) - int(str(ord(h2[1])))
+    val = h1[1] - h2[1]
     if val == 0:
       return 0
     else:
       return math.copysign(1, val)
   if h1[0] == 'pair':
-    val = int(str(ord(h1[1]))) - int(str(ord(h2[1])))
+    val = val = h1[1] - h2[1]
     if val == 0:
-      kicker = int(str(ord(h1[2]))) - int(str(ord(h2[2])))
+      kicker = h1[2] - h2[2]
       if kicker == 0:
         return kicker
       else:
@@ -93,6 +103,6 @@ def firstBetter3(h1:tuple, h2:tuple):
       
 
 if __name__ == "__main__":
-  parse2 = rank(inputTo3("AdAdKc"))
-  print(calc_royalties(parse2))
+  print(calc_royalties(rank(inputTo3("QdJd9d"))))
+  print(firstBetter3("AdAsQc", "QhKsKd"))
 
