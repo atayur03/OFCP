@@ -1,0 +1,11 @@
+,bottom,middle
+highCard,0,0
+pair,0,0
+2pair,0,0
+trips,0,2
+straight,2,4
+flush,4,8
+boat,6,12
+quads,10,20
+straightFlush,15,30
+royalFlush,25,50
